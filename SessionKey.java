@@ -5,10 +5,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import javax.crypto.spec.SecretKeySpec;
 /**
- * 
- * @author pethrus gärdborn
  * Represents the symmetric key used in a session between two parties in the VPN
- *
+ * @author pethrus gärdborn
+ *  
  */
 
 class SessionKey {
@@ -31,9 +30,13 @@ class SessionKey {
  * Receives a Base64-encoded <code> String </code> and assigns that key
  * to <code> SessionKey </code>
  * @param encodeKey The Base64-encoded key to be assigned to <code> SessionKey </code>
+ * @throws NoSuchAlgorithmException 
  */
-    public SessionKey(String encodeKey) {
+    public SessionKey(String encodeKey) throws NoSuchAlgorithmException {
         this.secretKey = new SecretKeySpec(Base64.getDecoder().decode(encodeKey), "AES");
+//        this.keyGen = KeyGenerator.getInstance("AES");
+//    	this.keyGen.init(128);
+//        this.secretKey = keyGen.generateKey();
     }
 /**
  * Returns the <code> SecretKey </code> kept in this class    
