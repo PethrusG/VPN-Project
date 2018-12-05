@@ -6,11 +6,14 @@ import java.io.IOException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 
 public class MyCertificate {
 
-	Certificate myCertificate;
+	X509Certificate myCertificate;
 
+	// TODO: USE X509 METHODS "RETURNdN" TO RETRIEVE NAME OF CERTIFICATE
+	
 	public MyCertificate(File certFile) throws CertificateException, IOException {
 		FileInputStream certFileStream = new FileInputStream(certFile);
 		BufferedInputStream certBufferStream = new 
@@ -19,11 +22,11 @@ public class MyCertificate {
 		CertificateFactory cf = CertificateFactory.getInstance("X.509");
 	
         while (certBufferStream.available() > 0)
-        	this.myCertificate = cf.generateCertificate(certBufferStream);
+        	this.myCertificate = (X509Certificate) cf.generateCertificate(certBufferStream);
 	}
 	
 	public String getDnCleartext() {
-		return this.myCertificate.
+		return myCertificate.getSubjectX500Principal().getName();
 	}
 }
 	

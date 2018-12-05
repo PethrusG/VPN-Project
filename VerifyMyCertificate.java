@@ -1,3 +1,12 @@
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SignatureException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateExpiredException;
+import java.security.cert.CertificateNotYetValidException;
+import java.util.Date;
+
 public class VerifyMyCertificate {
 	
 	MyCertificate userCertificate;
@@ -11,13 +20,11 @@ public class VerifyMyCertificate {
 	public boolean verifyCertificate() {
 		if (compareSignatureWithHash() && checkDatesValidity())
 			return true;
+		return false;
 		
-		else
-			return false;
-		
-		signature = userCertificate.getSignature();
-		if (compareSignatureWithHash(signature, hash))
-			return true;
+//		signature = userCertificate.getSignature();
+//		if (compareSignatureWithHash(signature, hash))
+//			return true;
 	
 	// Extract cleartext certificate
 	// Hash cleartext certificate
@@ -26,25 +33,49 @@ public class VerifyMyCertificate {
 	}
 	
 	private boolean compareSignatureWithHash() {
-		clearTextCert = userCertificate.cleartext();
-		clearTextCertHashed = userCertificate.hash(caCertificate.getHash());
-		decryptedSignature = userCertificate.decryptSignature(caCertificate.getPublicKey());
-		if (clearTextCertHashed.equals.decryptedSignature) {
-			return true
+	// TODO: Need public key file!	
+		try {
+			this.userCertificate.myCertificate.verify(this.caCertificate.myCertificate.getPublicKey());
 		}
-		return false;
+		catch (NoSuchAlgorithmException e) {
+			System.err.println("Caught NoSuchAlgorithmException" + e.getMessage());
+		}
+		catch (InvalidKeyException e) {
+			System.err.println("Caught InvalidKeyException" + e.getMessage());
+		}
+		catch (NoSuchProviderException e) {
+			System.err.println("Caught NoSuchProviderException" + e.getMessage());
+		}
+		catch (SignatureException e) {
+			System.err.println("Caught SignatureException" + e.getMessage());
+		}
+		catch (CertificateException e) {
+			System.err.println("Caught CertificateException" + e.getMessage());
+		}
+		return true;	
 	}
+		
+//		clearTextCert = userCertificate.cleartext();
+//		clearTextCertHashed = userCertificate.hash(caCertificate.getHash());
+//		decryptedSignature = userCertificate.decryptSignature(caCertificate.getPublicKey());
+//		if (clearTextCertHashed.equals.decryptedSignature) {
+//			return true
+//		}
+//		return false;
+//	}
 	
-	private boolean checkDates() {
+	private boolean checkDatesValidity() {
+		Date date = new Date();
+//		date.
+		try {
+			this.userCertificate.myCertificate.checkValidity();
+		}
+		catch (CertificateExpiredException e) {
+			System.err.println("Caught CertificateExpiredException" + e.getMessage());
+		}
+		catch (CertificateNotYetValidException e) {
+			System.err.println("Caught CertificateNotYetValidException" + e.getMessage());
+		}
 		return true;
-	// TODO: Implement!
-//		if(userCertificate.getValidityDate < todaysDate)
-//			return true;
-//		else
-//			return false;
 	}
 }
-
-	private checkDatesValidity() {
-		
-	}

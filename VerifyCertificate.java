@@ -18,23 +18,13 @@ public class VerifyCertificate {
 
 //    3. Verify the user certificate
 //    4. Print "Pass" if check 3 and 4 are successful
-//		VerifyMyCertificate verifyMyCertificate = new VerifyMyCertificate(caCertificate, userCertificate);
-//		if (verifyMyCertificate.verifyCertificate())
-//			System.out.println("Pass");
+		VerifyMyCertificate verifyMyCertificate = new VerifyMyCertificate(caCertificate, userCertificate);
+		if (verifyMyCertificate.verifyCertificate())
+			System.out.println("Pass");
 
 //    5. Print "Fail" if any of them fails, followed by an explanatory comment of how the verification failed
     	// TODO: Expand this with explanatory comment on why it failed, possibly using exception handling.
-//		else
-//			System.out.println("Fail");
-		
-//		certificateVerification = new CertificateVerification(args[0], args[1]);
-//		out.println(certificateVerification.getUserDnCleartext());
-//		out.println(certificateVerification.getCaDnCleartext());
-//		
-//		if(certificateVerification.verifyCaCertificate() && certificateVerification.verifyUserCertificate())
-//			out.println("Pass");
-//		else
-//			out.println("Fail");
-//		
+		else
+			System.out.println("Fail");
 	}
 }
