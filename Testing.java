@@ -3,7 +3,7 @@ import javax.crypto.SecretKey;
 import java.util.Base64;
 /**
  * Methods to test functionality in other classes.
- * Note that it is necessary to make the private methods pubic in SessionKey
+ * Note that it is necessary to make the private methods public in SessionKey
  * to be able to perform these tests.
  * @author pethrus
  *

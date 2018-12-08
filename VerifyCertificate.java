@@ -2,6 +2,13 @@ import java.io.File;
 import java.io.IOException;
 import java.security.cert.CertificateException;
 
+/**
+ * Simple program which, given a user certificate and CA certificate, verifies the
+ * user certificate file by decrypting the signature of the user certifiacte using
+ * the CAs public key and matching it against the hashed cleartext of the user 
+ * certificate. Also, the validity of the dates are checked.
+ * @author pethrus
+ */
 public class VerifyCertificate {
 
 	// args[0] is CA certificate file
