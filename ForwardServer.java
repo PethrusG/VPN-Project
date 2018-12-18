@@ -31,6 +31,8 @@ public class ForwardServer
     private static final boolean ENABLE_LOGGING = true;
     public static final int DEFAULTSERVERPORT = 2206;
     public static final String DEFAULTSERVERHOST = "localhost";
+    public static final String SERVERFORWARDERHOST = "localhost";
+    public static final String SERVERFORWARDERPORT = "6790";
     public static final String PROGRAMNAME = "ForwardServer";
     private static Arguments arguments;
 
@@ -61,6 +63,12 @@ public class ForwardServer
         	Logger.log("From ClientServer: Target port is: " + targetPort + 
         			"\n Target host is: " + targetHost);
         }
+        
+        HandshakeMessage serverForwardingInfo = new HandshakeMessage();
+        serverForwardingInfo.putParameter("messageType", "serverForwardingInfo");
+        serverForwardingInfo.putParameter("serverForwarderHost", SERVERFORWARDERHOST);
+        serverForwardingInfo.putParameter("serverForwarderPort", SERVERFORWARDERPORT);
+        serverForwardingInfo.send(clientSocket);
         	
         
         clientSocket.close();

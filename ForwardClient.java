@@ -53,10 +53,12 @@ public class ForwardClient
         HandshakeMessage clientRequest = new HandshakeMessage();
         clientRequest.putParameter("messageType", "targetRequest");
         clientRequest.putParameter("targetHost", "localhost");
-        clientRequest.putParameter("targetPort", "6789");
+        clientRequest.putParameter("targetPort", "6791");
         clientRequest.send(socket);
         
-        socket.close();
+        // TODO: Set serverHost and serverPort with the info you receive from the ForwardServer
+        
+//        socket.close();
 
         /*
          * Fake the handshake result with static parameters.
