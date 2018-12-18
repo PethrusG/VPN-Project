@@ -48,6 +48,7 @@ public class ForwardClient
         // TODO 
         // 1. [ ] First, just communicate targethost and targetport to ForwardServer
         //		  and receive serverhost and serverport answer. Test that it works.
+        //        [ ] Test with some other port numbers as well just to make sure.
         // 2. [ ] Then, add certificate verification. Test that it works.
         
         HandshakeMessage clientRequest = new HandshakeMessage();
@@ -57,7 +58,12 @@ public class ForwardClient
         clientRequest.send(socket);
         
         // TODO: Set serverHost and serverPort with the info you receive from the ForwardServer
-        
+        HandshakeMessage serverForwardingInfo = new HandshakeMessage();
+        serverForwardingInfo.recv(socket);
+        if (serverForwardingInfo.getParameter("messageType").equals("serverForwardingInfo")) {
+        	serverHost = serverForwardingInfo.getParameter("serverForwarderHost");
+        	serverPort = Integer.parseInt(serverForwardingInfo.getParameter("serverForwarderPort"));
+        }
 //        socket.close();
 
         /*
@@ -70,8 +76,8 @@ public class ForwardClient
          * to ForwardClient during the handshake (ServerHost, ServerPort parameters).
          * Here, we use a static address instead. 
          */
-        serverHost = Handshake.serverHost;
-        serverPort = Handshake.serverPort;        
+//        serverHost = Handshake.serverHost;
+//        serverPort = Handshake.serverPort;        
     }
 
     /*

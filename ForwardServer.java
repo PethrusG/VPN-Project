@@ -32,7 +32,7 @@ public class ForwardServer
     public static final int DEFAULTSERVERPORT = 2206;
     public static final String DEFAULTSERVERHOST = "localhost";
     public static final String SERVERFORWARDERHOST = "localhost";
-    public static final String SERVERFORWARDERPORT = "6790";
+    public static final String SERVERFORWARDERPORT = "6789";
     public static final String PROGRAMNAME = "ForwardServer";
     private static Arguments arguments;
 
@@ -68,6 +68,13 @@ public class ForwardServer
         serverForwardingInfo.putParameter("messageType", "serverForwardingInfo");
         serverForwardingInfo.putParameter("serverForwarderHost", SERVERFORWARDERHOST);
         serverForwardingInfo.putParameter("serverForwarderPort", SERVERFORWARDERPORT);
+        
+        Logger.log("Before sending: messageType is: " 
+        		+ serverForwardingInfo.getParameter("messageType"));
+        Logger.log("Before sending: serverForwarderHost is: " 
+        		+ serverForwardingInfo.getParameter("serverForwarderHost"));
+        Logger.log("Before sending: serverForwarderPort is: " 
+        		+ serverForwardingInfo.getParameter("serverForwarderPort"));
         serverForwardingInfo.send(clientSocket);
         	
         
