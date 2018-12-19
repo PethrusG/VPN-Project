@@ -21,10 +21,15 @@ import java.net.Socket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.Properties;
 import java.util.StringTokenizer;
+import java.security.cert.X509Certificate;
+import java.util.Base64;
+import java.security.cert.CertificateFactory;
  
 public class ForwardServer
 {
@@ -34,6 +39,8 @@ public class ForwardServer
     public static final String SERVERFORWARDERHOST = "localhost";
     public static final String SERVERFORWARDERPORT = "6789";
     public static final String PROGRAMNAME = "ForwardServer";
+    public static final String CACERTIFICATE = "/home/pethrus/Desktop/År 4/P2/Internet Security/Project/CA.pem";
+    public static final String FORWARDSERVERCERT = "/home/pethrus/Desktop/År 4/P2/Internet Security/Project/user.pem";
     private static Arguments arguments;
 
 
@@ -54,7 +61,47 @@ public class ForwardServer
         Logger.log("Incoming handshake connection from " + clientHostPort);
 
         /* TODO This is where the handshake should take place */
+        // Receive and verify client's certificate
+        HandshakeMessage clientHello = new HandshakeMessage();
+        clientHello.recv(clientSocket);
         
+        Logger.log("ForwardServer connected to: " + clientSocket.getRemoteSocketAddress());
+        
+        MyCertificate caCertificate = new MyCertificate(new File(CACERTIFICATE));
+        if(clientHello.getParameter("messageType").equals("clientHello")) {
+        	
+        	// Retrieve ForwardClient's certificate from socket
+        	byte[] forwardClientCertificateBytes = 
+        			Base64.getDecoder().
+        			decode(clientHello.getParameter("clientCertificate"));
+        	CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+        	InputStream in = new ByteArrayInputStream(forwardClientCertificateBytes);
+        	X509Certificate forwardClientCertificateX = 
+        			(X509Certificate)certFactory.generateCertificate(in);
+        	Logger.log("ForwardClient's certificate" + forwardClientCertificateX.toString());
+        	MyCertificate forwardClientCertificate = new MyCertificate(forwardClientCertificateX);
+        	
+        	// Verify certificate
+			VerifyMyCertificate verifyMyCertificate = new VerifyMyCertificate(caCertificate, forwardClientCertificate);
+			if (verifyMyCertificate.verifyCertificate())
+				System.out.println("ForwardClient's certificate verified");
+			else
+				System.out.println("Could not verify ForwardClient's certificate");
+        }
+        
+        // Send certificate to ForwardClient
+		MyCertificate userCertificate = 
+				new MyCertificate(new File(FORWARDSERVERCERT));
+		byte[] userCertificateToBytes = 
+				userCertificate.myCertificate.getEncoded();
+        HandshakeMessage serverHello = new HandshakeMessage();
+        serverHello.putParameter("messageType", "serverHello");
+        String userCertificateToString = 
+        		Base64.getEncoder().encodeToString(userCertificateToBytes);
+        serverHello.putParameter("clientCertificate", userCertificateToString);
+        serverHello.send(clientSocket);
+        
+        // Receive client request for target host & port
         HandshakeMessage clientRequest = new HandshakeMessage();
         clientRequest.recv(clientSocket);
         if(clientRequest.getParameter("messageType").equals("targetRequest")) {
@@ -64,6 +111,7 @@ public class ForwardServer
         			"\n Target host is: " + targetHost);
         }
         
+        // Send forwarding host & port number to ForwardClient
         HandshakeMessage serverForwardingInfo = new HandshakeMessage();
         serverForwardingInfo.putParameter("messageType", "serverForwardingInfo");
         serverForwardingInfo.putParameter("serverForwarderHost", SERVERFORWARDERHOST);
@@ -75,6 +123,7 @@ public class ForwardServer
         		+ serverForwardingInfo.getParameter("serverForwarderHost"));
         Logger.log("Before sending: serverForwarderPort is: " 
         		+ serverForwardingInfo.getParameter("serverForwarderPort"));
+        
         serverForwardingInfo.send(clientSocket);
         	
         

@@ -22,8 +22,11 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.security.cert.CertificateException;
 import java.io.IOException;
+import java.io.File;
 import java.io.FileInputStream;
+import java.util.Base64;
  
 public class ForwardClient
 {
@@ -32,32 +35,59 @@ public class ForwardClient
     public static final String DEFAULTSERVERHOST = "localhost";
     public static final String PROGRAMNAME = "ForwardClient";
     public static final int TARGETHOST = 6789;
+    public static final String FORWARDCLIENTCERT = "/home/pethrus/Desktop/År 4/P2/Internet Security/Project/user.pem";
 
     private static Arguments arguments;
     private static int serverPort;
     private static String serverHost;
-
-    private static void doHandshake() throws IOException {
+    
+    private static void doHandshake() throws IOException, CertificateException {
 
         /* Connect to forward server server */
-        System.out.println("Connect to " +  arguments.get("handshakehost") + ":" + Integer.parseInt(arguments.get("handshakeport")));
-        Socket socket = new Socket(arguments.get("handshakehost"), Integer.parseInt(arguments.get("handshakeport")));
-
+        System.out.println("Connect to " +  arguments.get("handshakehost") 
+        	+ ":" + Integer.parseInt(arguments.get("handshakeport")));
+        Socket socket = new Socket(arguments.get("handshakehost"), 
+        		Integer.parseInt(arguments.get("handshakeport")));
+        Logger.log("Now connected to " + socket.getRemoteSocketAddress());
         /* TODO This is where the handshake should take place */
 
         // TODO 
-        // 1. [ ] First, just communicate targethost and targetport to ForwardServer
+        // 1. [X] First, just communicate targethost and targetport to ForwardServer
         //		  and receive serverhost and serverport answer. Test that it works.
-        //        [ ] Test with some other port numbers as well just to make sure.
         // 2. [ ] Then, add certificate verification. Test that it works.
         
+        
+		MyCertificate userCertificate = 
+				new MyCertificate(new File(FORWARDCLIENTCERT));
+
+		/* Handshake phase */
+
+		byte[] userCertificateToBytes = 
+				userCertificate.myCertificate.getEncoded();
+//        String userCertificateToString = 
+//        		Base64.getEncoder().encodeToString(userCertificateToBytes);
+
+		// Send certificate to ForwardServer
+        HandshakeMessage clientHello = new HandshakeMessage();
+        clientHello.putParameter("messageType", "clientHello");
+        String userCertificateToString = 
+        		Base64.getEncoder().encodeToString(userCertificateToBytes);
+        clientHello.putParameter("clientCertificate", userCertificateToString);
+        clientHello.send(socket);
+       
+        // Receive and verify server's certificate
+        HandshakeMessage serverHello = new HandshakeMessage();
+        serverHello.recv(socket);        
+        // TODO: Verify server's certificat
+        
+        // Request forwarding 
         HandshakeMessage clientRequest = new HandshakeMessage();
         clientRequest.putParameter("messageType", "targetRequest");
         clientRequest.putParameter("targetHost", "localhost");
         clientRequest.putParameter("targetPort", "6791");
         clientRequest.send(socket);
         
-        // TODO: Set serverHost and serverPort with the info you receive from the ForwardServer
+        // Receive forwarding host & port
         HandshakeMessage serverForwardingInfo = new HandshakeMessage();
         serverForwardingInfo.recv(socket);
         if (serverForwardingInfo.getParameter("messageType").equals("serverForwardingInfo")) {
@@ -66,6 +96,8 @@ public class ForwardClient
         }
 //        socket.close();
 
+        /* Session phase */ 
+        
         /*
          * Fake the handshake result with static parameters.
          */
@@ -94,7 +126,7 @@ public class ForwardClient
      * Run handshake negotiation, then set up a listening socket and wait for user.
      * When user has connected, start port forwarder thread.
      */
-    static public void startForwardClient() throws IOException {
+    static public void startForwardClient() throws IOException, CertificateException {
 
         doHandshake();
 
@@ -154,8 +186,9 @@ public class ForwardClient
     /**
      * Program entry point. Reads arguments and run
      * the forward server
+     * @throws CertificateException 
      */
-    public static void main(String[] args)
+    public static void main(String[] args) throws CertificateException
     {
         try {
             arguments = new Arguments();

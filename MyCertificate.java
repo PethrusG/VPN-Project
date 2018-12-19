@@ -8,7 +8,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
 /**
- * 
+ *
  * @author pethrus
  *
  */
@@ -31,6 +31,10 @@ public class MyCertificate {
 	
         while (certBufferStream.available() > 0)
         	this.myCertificate = (X509Certificate) cf.generateCertificate(certBufferStream);
+	}
+	
+	public MyCertificate(X509Certificate certificate) {
+		this.myCertificate = certificate;
 	}
 
 	/**
