@@ -20,6 +20,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -53,10 +54,11 @@ public class ForwardClient
     private static String serverHost;
     private static MyCertificate forwardServerCertificate;
     private static SessionKey sessionKey;
+    private static SessionEncrypter sessionEncrypter;
     
     private static void doHandshake() throws IOException, CertificateException, 
     	NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, 
-    	NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException {
+    	NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
 
         /* Connect to forward server server */
         System.out.println("Connect to " +  arguments.get("handshakehost") 
@@ -118,18 +120,25 @@ public class ForwardClient
         // Receive forwarding host, port and session key
         HandshakeMessage serverForwardingInfo = new HandshakeMessage();
         serverForwardingInfo.recv(socket);
-        if (serverForwardingInfo.getParameter("messageType").equals("serverForwardingInfo")) {
+        if (serverForwardingInfo.getParameter("messageType").equals("Session")) {
         	serverHost = serverForwardingInfo.getParameter("serverForwarderHost");
         	serverPort = Integer.parseInt(serverForwardingInfo.getParameter("serverForwarderPort"));
         	String sessionKeyEncryptedEncoded = serverForwardingInfo.getParameter("sessionKey");
-        	byte [] sessionKeyEncryptedDecoded = Base64.getDecoder().decode(sessionKeyEncryptedEncoded);
+        	String sessionIv = serverForwardingInfo.getParameter("sessionIv");
+
         	// byte [] sessionKeyEncrypted = HandshakeCrypto.decrypt(sessionKeyEncryptedEncoded, );
         	
-        	// Decrypt session key
+        	// Decode and decrypt session key
+        	byte [] sessionKeyEncryptedDecoded = Base64.getDecoder().decode(sessionKeyEncryptedEncoded);
         	PrivateKey privateKey = HandshakeCrypto.getPrivateKeyFromKeyFile(FORWARDCLIENTPRIVATEKEY);
         	byte[] sessionKeyDecrypted = HandshakeCrypto.decrypt(sessionKeyEncryptedDecoded, privateKey);
-        	sessionKey = new SessionKey(sessionKeyDecrypted);
-        	System.out.println("Received session key: " + sessionKey);
+        	
+        	sessionEncrypter = new SessionEncrypter(sessionKeyDecrypted, sessionIv);
+        	System.out.println("Received session key: " + sessionEncrypter.key.toString());
+        	System.out.println("Received session key: " + sessionEncrypter.iv1.toString());
+        	
+//        	sessionKey = new SessionKey(sessionKeyDecrypted);
+//        	System.out.println("Received session key: " + sessionKey);
         }
         socket.close();
 
@@ -163,7 +172,7 @@ public class ForwardClient
      */
     static public void startForwardClient() throws IOException, CertificateException, 
     	InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, 
-    	NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException {
+    	NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
 
         doHandshake();
 
@@ -232,8 +241,9 @@ public class ForwardClient
      * @throws InvalidKeySpecException 
      * @throws NoSuchAlgorithmException 
      * @throws InvalidKeyException 
+     * @throws InvalidAlgorithmParameterException 
      */
-    public static void main(String[] args) throws CertificateException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException
+    public static void main(String[] args) throws CertificateException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException
     {
         try {
             arguments = new Arguments();

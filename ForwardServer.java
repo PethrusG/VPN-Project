@@ -42,7 +42,7 @@ public class ForwardServer
     public static final String PROGRAMNAME = "ForwardServer";
     public static final String CACERTIFICATE = "/home/pethrus/Desktop/År 4/P2/Internet Security/Project/CA.pem";
     public static final String FORWARDSERVERCERT = "/home/pethrus/Desktop/År 4/P2/Internet Security/Project/user.pem";
-    public static final int SECRETKEY = 256;
+    public static final int SECRETKEY = 128;
     private static Arguments arguments;
 
 
@@ -53,6 +53,7 @@ public class ForwardServer
     private int targetPort;
     private MyCertificate forwardClientCertificate;
     private SessionKey sessionKey;
+    private SessionEncrypter sessionEncrypter;
     
     /**
      * Do handshake negotiation with client to authenticate, learn 
@@ -117,24 +118,34 @@ public class ForwardServer
         	Logger.log("From ClientServer: Target port is: " + targetPort + 
         			"\n Target host is: " + targetHost);
         }
-        // Generate, encrypt and encode session key
-        sessionKey = new SessionKey(SECRETKEY);
-        byte [] sessionKeyBytes = sessionKey.getSecretKey().getEncoded();
-        byte [] sessionKeyEncrypted = HandshakeCrypto.encrypt(
-        		sessionKeyBytes, forwardClientCertificate.getPublicKey());
-        String sessionKeyEncoded = Base64.getEncoder().encodeToString(sessionKeyEncrypted);
+        // Generate session key and iv. Encrypt and encode session key.
+        sessionEncrypter = new SessionEncrypter(SECRETKEY);
+        byte [] sessionKeyBytes = sessionEncrypter.key.getSecretKey().getEncoded();
+        byte [] sessionKeyEncrypted = HandshakeCrypto.encrypt(sessionKeyBytes, 
+        		forwardClientCertificate.getPublicKey());
+        String sessionKeyEncoded = Base64.getEncoder().encodeToString(
+        		sessionKeyEncrypted);
+        String sessionIV = sessionEncrypter.encodeIV();
+        
+//        sessionKey = new SessionKey(SECRETKEY);
+//        byte [] sessionKeyBytes = sessionKey.getSecretKey().getEncoded();
+//        byte [] sessionKeyEncrypted = HandshakeCrypto.encrypt(
+//        		sessionKeyBytes, forwardClientCertificate.getPublicKey());
+//        String sessionKeyEncoded = Base64.getEncoder().encodeToString(
+//        	sessionKeyEncrypted);
         
 //        byte [] sessionKeyBytes = sessionKey.getSecretKey().getEncoded();
 //        String sessionKeyEncoded = Base64.getEncoder().encodeToString(sessionKeyEncrypted);
 //        byte [] sessionKeyEncrypted = HandshakeCrypto.encrypt(
 //        		sessionKeyBytes, forwardClientCertificate.getPublicKey());
-        // Send forwarding host & port number and session key to ForwardClient
+        // Send forwarding host & port number, session key and session iv to ForwardClient
         // TODO: Also generate and send SessionKey, SessionIV and Session
         HandshakeMessage serverForwardingInfo = new HandshakeMessage();
-        serverForwardingInfo.putParameter("messageType", "serverForwardingInfo");
+        serverForwardingInfo.putParameter("messageType", "Session");
         serverForwardingInfo.putParameter("serverForwarderHost", Handshake.serverHost);
         serverForwardingInfo.putParameter("serverForwarderPort", String.valueOf(Handshake.serverPort));
         serverForwardingInfo.putParameter("sessionKey", sessionKeyEncoded);
+        serverForwardingInfo.putParameter("sessionIv", sessionIV);
         
         Logger.log("Before sending: messageType is: " 
         		+ serverForwardingInfo.getParameter("messageType"));
