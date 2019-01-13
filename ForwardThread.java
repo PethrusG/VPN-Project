@@ -37,6 +37,7 @@ private static final int READ_BUFFER_SIZE = 8192;
     public void run()
     {
         byte[] buffer = new byte[READ_BUFFER_SIZE];
+        // TODO: Encrypt buffer
         try {
             while (true) {
                 int bytesRead = mInputStream.read(buffer);

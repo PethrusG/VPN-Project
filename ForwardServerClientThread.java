@@ -42,7 +42,8 @@ public class ForwardServerClientThread extends Thread
      * A client socket should be connected and passed to this constructor.
      * A server socket is created later by run() method.
      */
-    public ForwardServerClientThread(Socket aClientSocket, String serverhost, int serverport)
+    public ForwardServerClientThread(
+    		Socket aClientSocket, String serverhost, int serverport)
     {
         mClientSocket = aClientSocket;
         mServerPort = serverport;
@@ -54,7 +55,8 @@ public class ForwardServerClientThread extends Thread
      * Wait for client to connect on client listening socket.
      * A server socket is created later by run() method.
      */
-    public ForwardServerClientThread(ServerSocket listensocket, String serverhost, int serverport) throws IOException
+    public ForwardServerClientThread(
+    		ServerSocket listensocket, String serverhost, int serverport) throws IOException
     {
         mListenSocket = listensocket;
         //mServerHost =  listensocket.getInetAddress().getHostAddress();
@@ -109,8 +111,10 @@ public class ForwardServerClientThread extends Thread
            Logger.log("TCP Forwarding  " + mClientHostPort + " <--> " + mServerHostPort + "  started.");
  
            // Start forwarding of socket data between server and client
-           ForwardThread clientForward = new ForwardThread(this, clientIn, serverOut);
-           ForwardThread serverForward = new ForwardThread(this, serverIn, clientOut);
+           ForwardThread clientForward = new ForwardThread(
+        		   this, clientIn, serverOut);
+           ForwardThread serverForward = new ForwardThread(
+        		   this, serverIn, clientOut);
            mBothConnectionsAreAlive = true;
            clientForward.start();
            serverForward.start();

@@ -12,6 +12,8 @@ import javax.crypto.spec.SecretKeySpec;
 
 class SessionKey {
 
+	public static final String ALGORITHM = "AES";
+
     private SecretKey secretKey;
     private KeyGenerator keyGen;
 
@@ -24,6 +26,10 @@ class SessionKey {
         this.keyGen = KeyGenerator.getInstance("AES");
     	this.keyGen.init(keylength);
         this.secretKey = keyGen.generateKey();
+    }
+    
+    public SessionKey(byte[] secretKey) {
+    	this.secretKey = new SecretKeySpec(secretKey, ALGORITHM);
     }
 
 /**

@@ -29,6 +29,7 @@ import java.util.Properties;
 import java.util.StringTokenizer;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
+import java.security.Key;
 import java.security.cert.CertificateFactory;
  
 public class ForwardServer
@@ -41,6 +42,7 @@ public class ForwardServer
     public static final String PROGRAMNAME = "ForwardServer";
     public static final String CACERTIFICATE = "/home/pethrus/Desktop/År 4/P2/Internet Security/Project/CA.pem";
     public static final String FORWARDSERVERCERT = "/home/pethrus/Desktop/År 4/P2/Internet Security/Project/user.pem";
+    public static final int SECRETKEY = 256;
     private static Arguments arguments;
 
 
@@ -49,6 +51,8 @@ public class ForwardServer
     private ServerSocket listenSocket;
     private String targetHost;
     private int targetPort;
+    private MyCertificate forwardClientCertificate;
+    private SessionKey sessionKey;
     
     /**
      * Do handshake negotiation with client to authenticate, learn 
@@ -60,8 +64,9 @@ public class ForwardServer
         String clientHostPort = clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort();
         Logger.log("Incoming handshake connection from " + clientHostPort);
 
-        /* TODO This is where the handshake should take place */
-        // Receive and verify client's certificate
+        /* Handshake phase */ 
+        
+        // Receive client's certificate
         HandshakeMessage clientHello = new HandshakeMessage();
         clientHello.recv(clientSocket);
         
@@ -70,7 +75,7 @@ public class ForwardServer
         MyCertificate caCertificate = new MyCertificate(new File(CACERTIFICATE));
         if(clientHello.getParameter("messageType").equals("clientHello")) {
         	
-        	// Retrieve ForwardClient's certificate from socket
+        	// Retrieve ForwardClient's certificate 
         	byte[] forwardClientCertificateBytes = 
         			Base64.getDecoder().
         			decode(clientHello.getParameter("clientCertificate"));
@@ -79,10 +84,12 @@ public class ForwardServer
         	X509Certificate forwardClientCertificateX = 
         			(X509Certificate)certFactory.generateCertificate(in);
         	Logger.log("ForwardClient's certificate" + forwardClientCertificateX.toString());
-        	MyCertificate forwardClientCertificate = new MyCertificate(forwardClientCertificateX);
+//        	MyCertificate forwardClientCertificate = new MyCertificate(forwardClientCertificateX);
+        	forwardClientCertificate = new MyCertificate(forwardClientCertificateX);
         	
         	// Verify certificate
-			VerifyMyCertificate verifyMyCertificate = new VerifyMyCertificate(caCertificate, forwardClientCertificate);
+			VerifyMyCertificate verifyMyCertificate = new VerifyMyCertificate(
+					caCertificate, forwardClientCertificate);
 			if (verifyMyCertificate.verifyCertificate())
 				System.out.println("ForwardClient's certificate verified");
 			else
@@ -98,7 +105,7 @@ public class ForwardServer
         serverHello.putParameter("messageType", "serverHello");
         String userCertificateToString = 
         		Base64.getEncoder().encodeToString(userCertificateToBytes);
-        serverHello.putParameter("clientCertificate", userCertificateToString);
+        serverHello.putParameter("serverCertificate", userCertificateToString);
         serverHello.send(clientSocket);
         
         // Receive client request for target host & port
@@ -110,12 +117,24 @@ public class ForwardServer
         	Logger.log("From ClientServer: Target port is: " + targetPort + 
         			"\n Target host is: " + targetHost);
         }
+        // Generate, encrypt and encode session key
+        sessionKey = new SessionKey(SECRETKEY);
+        byte [] sessionKeyBytes = sessionKey.getSecretKey().getEncoded();
+        byte [] sessionKeyEncrypted = HandshakeCrypto.encrypt(
+        		sessionKeyBytes, forwardClientCertificate.getPublicKey());
+        String sessionKeyEncoded = Base64.getEncoder().encodeToString(sessionKeyEncrypted);
         
-        // Send forwarding host & port number to ForwardClient
+//        byte [] sessionKeyBytes = sessionKey.getSecretKey().getEncoded();
+//        String sessionKeyEncoded = Base64.getEncoder().encodeToString(sessionKeyEncrypted);
+//        byte [] sessionKeyEncrypted = HandshakeCrypto.encrypt(
+//        		sessionKeyBytes, forwardClientCertificate.getPublicKey());
+        // Send forwarding host & port number and session key to ForwardClient
+        // TODO: Also generate and send SessionKey, SessionIV and Session
         HandshakeMessage serverForwardingInfo = new HandshakeMessage();
         serverForwardingInfo.putParameter("messageType", "serverForwardingInfo");
-        serverForwardingInfo.putParameter("serverForwarderHost", SERVERFORWARDERHOST);
-        serverForwardingInfo.putParameter("serverForwarderPort", SERVERFORWARDERPORT);
+        serverForwardingInfo.putParameter("serverForwarderHost", Handshake.serverHost);
+        serverForwardingInfo.putParameter("serverForwarderPort", String.valueOf(Handshake.serverPort));
+        serverForwardingInfo.putParameter("sessionKey", sessionKeyEncoded);
         
         Logger.log("Before sending: messageType is: " 
         		+ serverForwardingInfo.getParameter("messageType"));
@@ -125,8 +144,6 @@ public class ForwardServer
         		+ serverForwardingInfo.getParameter("serverForwarderPort"));
         
         serverForwardingInfo.send(clientSocket);
-        	
-        
         clientSocket.close();
 
         /*
@@ -175,7 +192,9 @@ public class ForwardServer
 
                doHandshake();
 
-               forwardThread = new ForwardServerClientThread(this.listenSocket, this.targetHost, this.targetPort);
+            // TODO: Add encryption in ForwardServerClientThread!
+               forwardThread = new ForwardServerClientThread(
+            		   this.listenSocket, this.targetHost, this.targetPort);
                forwardThread.start();
            } catch (IOException e) {
                throw e;

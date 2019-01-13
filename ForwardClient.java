@@ -14,19 +14,28 @@
  */
 
  
-import java.lang.AssertionError;
 import java.lang.IllegalArgumentException;
 import java.lang.Integer;
-import java.util.ArrayList;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.util.Base64;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
  
 public class ForwardClient
 {
@@ -36,12 +45,18 @@ public class ForwardClient
     public static final String PROGRAMNAME = "ForwardClient";
     public static final int TARGETHOST = 6789;
     public static final String FORWARDCLIENTCERT = "/home/pethrus/Desktop/År 4/P2/Internet Security/Project/user.pem";
+    public static final String CACERTIFICATE = "/home/pethrus/Desktop/År 4/P2/Internet Security/Project/CA.pem";
+    public static final String FORWARDCLIENTPRIVATEKEY = "/home/pethrus/Desktop/År 4/P2/Internet Security/Project/userPrivateKeypkcs8.der";
 
     private static Arguments arguments;
     private static int serverPort;
     private static String serverHost;
+    private static MyCertificate forwardServerCertificate;
+    private static SessionKey sessionKey;
     
-    private static void doHandshake() throws IOException, CertificateException {
+    private static void doHandshake() throws IOException, CertificateException, 
+    	NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, 
+    	NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException {
 
         /* Connect to forward server server */
         System.out.println("Connect to " +  arguments.get("handshakehost") 
@@ -49,25 +64,14 @@ public class ForwardClient
         Socket socket = new Socket(arguments.get("handshakehost"), 
         		Integer.parseInt(arguments.get("handshakeport")));
         Logger.log("Now connected to " + socket.getRemoteSocketAddress());
-        /* TODO This is where the handshake should take place */
-
-        // TODO 
-        // 1. [X] First, just communicate targethost and targetport to ForwardServer
-        //		  and receive serverhost and serverport answer. Test that it works.
-        // 2. [ ] Then, add certificate verification. Test that it works.
-        
-        
-		MyCertificate userCertificate = 
-				new MyCertificate(new File(FORWARDCLIENTCERT));
 
 		/* Handshake phase */
 
+		// Send certificate to ForwardServer
+		MyCertificate userCertificate = 
+				new MyCertificate(new File(FORWARDCLIENTCERT));
 		byte[] userCertificateToBytes = 
 				userCertificate.myCertificate.getEncoded();
-//        String userCertificateToString = 
-//        		Base64.getEncoder().encodeToString(userCertificateToBytes);
-
-		// Send certificate to ForwardServer
         HandshakeMessage clientHello = new HandshakeMessage();
         clientHello.putParameter("messageType", "clientHello");
         String userCertificateToString = 
@@ -75,10 +79,34 @@ public class ForwardClient
         clientHello.putParameter("clientCertificate", userCertificateToString);
         clientHello.send(socket);
        
-        // Receive and verify server's certificate
+        // Receive ForwardServer's certificate
         HandshakeMessage serverHello = new HandshakeMessage();
         serverHello.recv(socket);        
-        // TODO: Verify server's certificat
+        MyCertificate caCertificate = new MyCertificate(new File(CACERTIFICATE));
+
+        if(serverHello.getParameter("messageType").equals("serverHello")) {
+        	
+        	// Retrieve ForwardServer's certificate 
+        	byte[] forwardServerCertificateBytes = 
+        			Base64.getDecoder().
+        			decode(serverHello.getParameter("serverCertificate"));
+        	CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+        	InputStream in = new ByteArrayInputStream(forwardServerCertificateBytes);
+        	X509Certificate forwardServerCertificateX = 
+        			(X509Certificate)certFactory.generateCertificate(in);
+        	Logger.log("ForwardServer's certificate" + 
+        			forwardServerCertificateX.toString());
+        	forwardServerCertificate = 
+        			new MyCertificate(forwardServerCertificateX);
+        	
+        	// Verify certificate
+			VerifyMyCertificate verifyMyCertificate = 
+					new VerifyMyCertificate(caCertificate, forwardServerCertificate);
+			if (verifyMyCertificate.verifyCertificate())
+				System.out.println("ForwardServer's certificate verified");
+			else
+				System.out.println("Could not verify ForwardClient's certificate");
+        }
         
         // Request forwarding 
         HandshakeMessage clientRequest = new HandshakeMessage();
@@ -87,17 +115,24 @@ public class ForwardClient
         clientRequest.putParameter("targetPort", "6791");
         clientRequest.send(socket);
         
-        // Receive forwarding host & port
+        // Receive forwarding host, port and session key
         HandshakeMessage serverForwardingInfo = new HandshakeMessage();
         serverForwardingInfo.recv(socket);
         if (serverForwardingInfo.getParameter("messageType").equals("serverForwardingInfo")) {
         	serverHost = serverForwardingInfo.getParameter("serverForwarderHost");
         	serverPort = Integer.parseInt(serverForwardingInfo.getParameter("serverForwarderPort"));
+        	String sessionKeyEncryptedEncoded = serverForwardingInfo.getParameter("sessionKey");
+        	byte [] sessionKeyEncryptedDecoded = Base64.getDecoder().decode(sessionKeyEncryptedEncoded);
+        	// byte [] sessionKeyEncrypted = HandshakeCrypto.decrypt(sessionKeyEncryptedEncoded, );
+        	
+        	// Decrypt session key
+        	PrivateKey privateKey = HandshakeCrypto.getPrivateKeyFromKeyFile(FORWARDCLIENTPRIVATEKEY);
+        	byte[] sessionKeyDecrypted = HandshakeCrypto.decrypt(sessionKeyEncryptedDecoded, privateKey);
+        	sessionKey = new SessionKey(sessionKeyDecrypted);
+        	System.out.println("Received session key: " + sessionKey);
         }
-//        socket.close();
+        socket.close();
 
-        /* Session phase */ 
-        
         /*
          * Fake the handshake result with static parameters.
          */
@@ -126,7 +161,9 @@ public class ForwardClient
      * Run handshake negotiation, then set up a listening socket and wait for user.
      * When user has connected, start port forwarder thread.
      */
-    static public void startForwardClient() throws IOException, CertificateException {
+    static public void startForwardClient() throws IOException, CertificateException, 
+    	InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, 
+    	NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException {
 
         doHandshake();
 
@@ -148,8 +185,10 @@ public class ForwardClient
             Socket clientSocket = listensocket.accept();
             String clientHostPort = clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort();
             log("Accepted client from " + clientHostPort);
-            
-            forwardThread = new ForwardServerClientThread(clientSocket, serverHost, serverPort);
+           
+            // TODO: Add encryption in ForwardServerClientThread!
+            forwardThread = new ForwardServerClientThread(
+            		clientSocket, serverHost, serverPort);
             forwardThread.start();
             
         } catch (IOException e) {
@@ -187,8 +226,14 @@ public class ForwardClient
      * Program entry point. Reads arguments and run
      * the forward server
      * @throws CertificateException 
+     * @throws BadPaddingException 
+     * @throws IllegalBlockSizeException 
+     * @throws NoSuchPaddingException 
+     * @throws InvalidKeySpecException 
+     * @throws NoSuchAlgorithmException 
+     * @throws InvalidKeyException 
      */
-    public static void main(String[] args) throws CertificateException
+    public static void main(String[] args) throws CertificateException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException
     {
         try {
             arguments = new Arguments();
