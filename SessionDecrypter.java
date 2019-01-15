@@ -31,12 +31,21 @@ public class SessionDecrypter {
 	 * @throws InvalidAlgorithmParameterException
 	 */
 	SessionDecrypter(String key, String iv) throws InvalidKeyException, NoSuchAlgorithmException, 
-	NoSuchPaddingException, InvalidAlgorithmParameterException {
+		NoSuchPaddingException, InvalidAlgorithmParameterException {
 		this.key = new SessionKey(key);
 		this.cipher = Cipher.getInstance("AES/CTR/NoPadding");
 //		this.iv = cipher.getIV();
 //		this.iv = new IvParameterSpec(this.key.getSecretKey().getEncoded());
 		this.iv = Base64.getDecoder().decode(iv);
+		this.cipher.init(Cipher.DECRYPT_MODE, this.key.getSecretKey(), 
+				new IvParameterSpec(this.iv));
+	}
+	
+	SessionDecrypter(byte[] key, byte[] iv) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException {
+		this.key = new SessionKey(key);
+		this.cipher = Cipher.getInstance("AES/CTR/NoPadding");
+		this.iv = iv;
+		System.out.println("************iv is: " + iv);
 		this.cipher.init(Cipher.DECRYPT_MODE, this.key.getSecretKey(), 
 				new IvParameterSpec(this.iv));
 	}

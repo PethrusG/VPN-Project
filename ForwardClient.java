@@ -55,6 +55,7 @@ public class ForwardClient
     private static MyCertificate forwardServerCertificate;
     private static SessionKey sessionKey;
     private static SessionEncrypter sessionEncrypter;
+    private static SessionDecrypter sessionDecrypter;
     
     private static void doHandshake() throws IOException, CertificateException, 
     	NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, 
@@ -137,6 +138,11 @@ public class ForwardClient
         	System.out.println("Received session key: " + sessionEncrypter.key.toString());
         	System.out.println("Received session key: " + sessionEncrypter.iv1.toString());
         	
+        	// Generate session decrypter
+        	sessionDecrypter = new SessionDecrypter(
+        		sessionEncrypter.key.getSecretKey().getEncoded(), 
+        		sessionEncrypter.iv1.getIV());
+        	
 //        	sessionKey = new SessionKey(sessionKeyDecrypted);
 //        	System.out.println("Received session key: " + sessionKey);
         }
@@ -197,7 +203,8 @@ public class ForwardClient
            
             // TODO: Add encryption in ForwardServerClientThread!
             forwardThread = new ForwardServerClientThread(
-            		clientSocket, serverHost, serverPort);
+            		clientSocket, serverHost, serverPort, 
+            		sessionEncrypter, sessionDecrypter, false);
             forwardThread.start();
             
         } catch (IOException e) {

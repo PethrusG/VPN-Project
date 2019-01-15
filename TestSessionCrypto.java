@@ -15,7 +15,8 @@ public class TestSessionCrypto  {
 
         // Attach output file to encrypter, and open input file
         try (
-             CipherOutputStream cryptoout = sessionencrypter.openCipherOutputStream(new FileOutputStream(CIPHER));
+             CipherOutputStream cryptoout = 
+             	sessionencrypter.openCipherOutputStream(new FileOutputStream(CIPHER));
              FileInputStream plainin = new FileInputStream(PLAININPUT);
              ) {
 

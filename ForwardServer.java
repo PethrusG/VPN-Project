@@ -54,6 +54,7 @@ public class ForwardServer
     private MyCertificate forwardClientCertificate;
     private SessionKey sessionKey;
     private SessionEncrypter sessionEncrypter;
+    private SessionDecrypter sessionDecrypter;
     
     /**
      * Do handshake negotiation with client to authenticate, learn 
@@ -126,6 +127,12 @@ public class ForwardServer
         String sessionKeyEncoded = Base64.getEncoder().encodeToString(
         		sessionKeyEncrypted);
         String sessionIV = sessionEncrypter.encodeIV();
+        
+        System.out.println("****In Forward Server. iv is: " + sessionEncrypter.iv1.getIV());
+        System.out.println("****In Forward Server. iv-String is: " + sessionIV);
+        // Generate session decrypter
+        sessionDecrypter = new SessionDecrypter(
+        		sessionEncrypter.key.getSecretKey().getEncoded(), sessionEncrypter.iv1.getIV());
         
 //        sessionKey = new SessionKey(SECRETKEY);
 //        byte [] sessionKeyBytes = sessionKey.getSecretKey().getEncoded();
@@ -205,7 +212,8 @@ public class ForwardServer
 
             // TODO: Add encryption in ForwardServerClientThread!
                forwardThread = new ForwardServerClientThread(
-            		   this.listenSocket, this.targetHost, this.targetPort);
+            		   this.listenSocket, this.targetHost, this.targetPort, 
+            		   this.sessionEncrypter, this.sessionDecrypter, true);
                forwardThread.start();
            } catch (IOException e) {
                throw e;

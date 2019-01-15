@@ -1,3 +1,4 @@
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -5,6 +6,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
 import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
@@ -36,13 +38,13 @@ public class SessionEncrypter {
 		
 		this.key = new SessionKey(keylength);
 		this.cipher = Cipher.getInstance("AES/CTR/NoPadding");
-		this.iv1 = new IvParameterSpec(this.key.getSecretKey().getEncoded());
+//		this.iv1 = new IvParameterSpec(this.key.getSecretKey().getEncoded());
 		
 		SecureRandom randomSecureRandom = SecureRandom.getInstance("SHA1PRNG");
 		byte[] iv = new byte[cipher.getBlockSize()];
 		randomSecureRandom.nextBytes(iv);
 		this.iv1 = new IvParameterSpec(iv);
-		
+        System.out.println("****In SessionEncrypter. iv is: " + iv1.getIV());
 		this.cipher.init(Cipher.ENCRYPT_MODE, this.key.getSecretKey(),
 				this.iv1);
 	}
@@ -82,7 +84,9 @@ public class SessionEncrypter {
 		return Base64.getEncoder().encodeToString(this.iv1.getIV());
 	}
 	
-	
+	CipherInputStream openCipherInputStream(InputStream input) {
+		return new CipherInputStream(input, cipher);
+	}
 	/**
 	 * Receives cleartext data as an OutputStream, encrypts it and returns it as
 	 * a CipherOutputStream
@@ -91,6 +95,9 @@ public class SessionEncrypter {
 	 */
 	CipherOutputStream openCipherOutputStream(OutputStream output) {
 		// TODO: Should we use the initialization vector here??
+		System.out.println("Inside openCipherOutputStream");
+//		CipherOutputStream cipherOut = new CipherOutputStream(output, cipher);
+//		System.out.println("Output cipher is: " + cipherOut.toString());
 		return new CipherOutputStream(output, cipher);
 	}
 }
