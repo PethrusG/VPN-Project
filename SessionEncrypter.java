@@ -59,12 +59,13 @@ public class SessionEncrypter {
 				this.iv1);
 	}
 
-	SessionEncrypter(byte[] key, String iv) throws NoSuchAlgorithmException, 
+	SessionEncrypter(byte[] key, byte[] iv) throws NoSuchAlgorithmException, 
 		NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException {
 		
 		this.key = new SessionKey(key);
 		this.cipher = Cipher.getInstance("AES/CTR/NoPadding");
-		this.iv1 = new IvParameterSpec(Base64.getDecoder().decode(iv));
+//		this.iv1 = new IvParameterSpec(Base64.getDecoder().decode(iv));
+		this.iv1 = new IvParameterSpec(iv);
 		this.cipher.init(Cipher.ENCRYPT_MODE, this.key.getSecretKey(),
 				this.iv1);
 	}

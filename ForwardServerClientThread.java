@@ -18,6 +18,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.ServerSocket;
 import java.net.SocketException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -39,6 +40,10 @@ public class ForwardServerClientThread extends Thread
     private SessionEncrypter sessionEncrypter;
     private SessionDecrypter sessionDecrypter;
     private boolean isForwardServer;
+    private String CLIENTOUT = "/home/pethrus/Desktop/clientOut.txt";
+    private String CLIENTIN = "/home/pethrus/Desktop/clientIn.txt";
+    private String SERVEROUT = "/home/pethrus/Desktop/serverOut.txt";
+    private String SERVERIN = "/home/pethrus/Desktop/serverIn.txt";
 
     /**
      * Creates a client thread for handling clients of NakovForwardServer.
@@ -142,10 +147,12 @@ public class ForwardServerClientThread extends Thread
         		   mClientSocket.getInputStream());
            OutputStream clientOut = sessionEncrypter.openCipherOutputStream(
         		   mClientSocket.getOutputStream());
+//           OutputStream checkClientOut = new FileOutputStream(CLIENTOUT);
            InputStream serverIn = sessionDecrypter.openCipherInputStream(
         		   mServerSocket.getInputStream());
            OutputStream serverOut = sessionEncrypter.openCipherOutputStream(
         		   mServerSocket.getOutputStream());
+//           OutputStream checkServerOut = new FileOutputStream(SERVEROUT);
 
            mServerHostPort = mServerHost + ":" + mServerPort;
            Logger.log("TCP Forwarding  " + mClientHostPort + " <--> " + mServerHostPort + "  started.");
