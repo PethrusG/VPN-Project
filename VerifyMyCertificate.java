@@ -52,18 +52,23 @@ public class VerifyMyCertificate {
 		}
 		catch (NoSuchAlgorithmException e) {
 			System.err.println("Caught NoSuchAlgorithmException");
+			return false;
 		}
 		catch (InvalidKeyException e) {
 			System.err.println("Caught InvalidKeyException");
+			return false;
 		}
 		catch (NoSuchProviderException e) {
 			System.err.println("Caught NoSuchProviderException");
+			return false;
 		}
 		catch (SignatureException e) {
 			System.err.println("Caught SignatureException");
+			return false;
 		}
 		catch (CertificateException e) {
 			System.err.println("Caught CertificateException");
+			return false;
 		}
 		return true;	
 	}

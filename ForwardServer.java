@@ -16,6 +16,7 @@
 import java.lang.AssertionError;
 import java.lang.Integer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.InetAddress;
@@ -89,7 +90,6 @@ public class ForwardServer
         	InputStream in = new ByteArrayInputStream(forwardClientCertificateBytes);
         	X509Certificate forwardClientCertificateX = 
         			(X509Certificate)certFactory.generateCertificate(in);
-        	Logger.log("ForwardClient's certificate" + forwardClientCertificateX.toString());
 //        	MyCertificate forwardClientCertificate = new MyCertificate(forwardClientCertificateX);
         	forwardClientCertificate = new MyCertificate(forwardClientCertificateX);
         	
@@ -98,6 +98,7 @@ public class ForwardServer
 					caCertificate, forwardClientCertificate);
 			if (verifyMyCertificate.verifyCertificate())
 				System.out.println("ForwardClient's certificate verified");
+			// TODO: Abort session if certificate cannot be verified!
 			else
 				System.out.println("Could not verify ForwardClient's certificate");
         }
@@ -107,13 +108,6 @@ public class ForwardServer
 //				new MyCertificate(new File(FORWARDSERVERCERT));
 		MyCertificate userCertificate = 
 				new MyCertificate(new File(arguments.get("usercert")));
-		
-		// TODO: Remove. Just for testing
-        VerifyMyCertificate verifyThisServerCert = new VerifyMyCertificate(caCertificate, userCertificate);
-        if (verifyThisServerCert.verifyCertificate())
-        	System.out.println("SERVER Cert is verified");
-        else
-        	System.out.println("SERVER Cert is verified");
 		
 		byte[] userCertificateToBytes = 
 				userCertificate.myCertificate.getEncoded();
@@ -142,35 +136,19 @@ public class ForwardServer
         		sessionKeyEncrypted);
 
         byte [] sessionIv = sessionEncrypter.iv1.getIV();
-        System.out.println("****In Forward Server. This is null: " + null);
-        System.out.println("****In Forward Server. iv-String is: " + sessionIv);
+		System.out.println("In Forward Server: iv before encryption: " + Arrays.toString(sessionIv));
         byte []  sessionIvEncrypted = HandshakeCrypto.encrypt(sessionIv, 
         		forwardClientCertificate.getPublicKey());
+		System.out.println("In Forward Server: iv after encryption: " + Arrays.toString(sessionIvEncrypted));
+
         String sessionIvEncoded = Base64.getEncoder().encodeToString(
         		sessionIvEncrypted);
-//        String sessionIV = sessionEncrypter.encodeIV();
-
-        System.out.println("****In Forward Server. iv encrypted is " + sessionIvEncrypted.toString());
-        System.out.println("****In Forward Server. iv is: " + sessionEncrypter.iv1.getIV());
-        System.out.println("****In Forward Server. iv-String is: " + sessionIv.toString());
+		System.out.println("In Forward Server: iv after encryption and encoding: " + Arrays.toString(sessionIvEncoded.getBytes()));
 
         // Generate session decrypter
         sessionDecrypter = new SessionDecrypter(
         		sessionEncrypter.key.getSecretKey().getEncoded(), sessionEncrypter.iv1.getIV());
         
-//        sessionKey = new SessionKey(SECRETKEY);
-//        byte [] sessionKeyBytes = sessionKey.getSecretKey().getEncoded();
-//        byte [] sessionKeyEncrypted = HandshakeCrypto.encrypt(
-//        		sessionKeyBytes, forwardClientCertificate.getPublicKey());
-//        String sessionKeyEncoded = Base64.getEncoder().encodeToString(
-//        	sessionKeyEncrypted);
-        
-//        byte [] sessionKeyBytes = sessionKey.getSecretKey().getEncoded();
-//        String sessionKeyEncoded = Base64.getEncoder().encodeToString(sessionKeyEncrypted);
-//        byte [] sessionKeyEncrypted = HandshakeCrypto.encrypt(
-//        		sessionKeyBytes, forwardClientCertificate.getPublicKey());
-        // Send forwarding host & port number, session key and session iv to ForwardClient
-        // TODO: Also generate and send SessionKey, SessionIV and Session
         HandshakeMessage serverForwardingInfo = new HandshakeMessage();
         serverForwardingInfo.putParameter("MessageType", "Session");
         serverForwardingInfo.putParameter("ServerHost", Handshake.serverHost);
@@ -178,35 +156,11 @@ public class ForwardServer
         serverForwardingInfo.putParameter("SessionKey", sessionKeyEncoded);
         serverForwardingInfo.putParameter("SessionIV", sessionIvEncoded);
         
-        Logger.log("Before sending: messageType is: " 
-        		+ serverForwardingInfo.getParameter("messageType"));
-        Logger.log("Before sending: serverForwarderHost is: " 
-        		+ serverForwardingInfo.getParameter("serverForwarderHost"));
-        Logger.log("Before sending: serverForwarderPort is: " 
-        		+ serverForwardingInfo.getParameter("serverForwarderPort"));
-        
         serverForwardingInfo.send(clientSocket);
         clientSocket.close();
 
-        /*
-         * Fake the handshake result with static parameters. 
-         */
-
-        /* listenSocket is a new socket where the ForwardServer waits for the 
-         * client to connect. The ForwardServer creates this socket and communicates
-         * the socket's address to the ForwardClient during the handshake, so that the 
-         * ForwardClient knows to where it should connect (ServerHost/ServerPort parameters).
-         * Here, we use a static address instead (serverHost/serverPort). 
-         * (This may give "Address already in use" errors, but that's OK for now.)
-         */
         listenSocket = new ServerSocket();
         listenSocket.bind(new InetSocketAddress(Handshake.serverHost, Handshake.serverPort));
-
-        /* The final destination. The ForwardServer sets up port forwarding
-         * between the listensocket (ie., ServerHost/ServerPort) and the target.
-         */
-//        targetHost = Handshake.targetHost;
-//        targetPort = Handshake.targetPort;        
     }
 
     /**

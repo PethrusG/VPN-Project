@@ -11,6 +11,7 @@ import javax.crypto.CipherOutputStream;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 
+import java.util.Arrays;
 import java.util.Base64;
 
 /**
@@ -41,10 +42,16 @@ public class SessionEncrypter {
 //		this.iv1 = new IvParameterSpec(this.key.getSecretKey().getEncoded());
 		
 		SecureRandom randomSecureRandom = SecureRandom.getInstance("SHA1PRNG");
-		byte[] iv = new byte[cipher.getBlockSize()];
+//		byte[] iv = new byte[cipher.getBlockSize()];
+		iv = new byte[cipher.getBlockSize()];
+		System.out.println("iv before randomization: " + Arrays.toString(iv));
+		System.out.println("iv byte size before randomization: " + cipher.getBlockSize());
 		randomSecureRandom.nextBytes(iv);
+		System.out.println("iv after randomization: " + Arrays.toString(iv));
 		this.iv1 = new IvParameterSpec(iv);
-        System.out.println("****In SessionEncrypter. iv is: " + iv1.getIV());
+		System.out.println("IvParameterSpec iv1: " + Arrays.toString(iv1.getIV()));
+//		this.cipher.init(Cipher.ENCRYPT_MODE, this.key.getSecretKey(),
+//				this.iv1);
 		this.cipher.init(Cipher.ENCRYPT_MODE, this.key.getSecretKey(),
 				this.iv1);
 	}
@@ -95,10 +102,6 @@ public class SessionEncrypter {
 	 * @return The encrypted data
 	 */
 	CipherOutputStream openCipherOutputStream(OutputStream output) {
-		// TODO: Should we use the initialization vector here??
-		System.out.println("Inside openCipherOutputStream");
-//		CipherOutputStream cipherOut = new CipherOutputStream(output, cipher);
-//		System.out.println("Output cipher is: " + cipherOut.toString());
 		return new CipherOutputStream(output, cipher);
 	}
 }

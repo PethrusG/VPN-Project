@@ -42,18 +42,7 @@ private static String PLAINOUTPUT = "/home/pethrus/Desktop/plainoutput.txt";
     		SessionEncrypter sessionEncrypter) throws FileNotFoundException
     {
         mInputStream = aInputStream;
-
-//        mInputStream = sessionEncrypter.openCipherInputStream(aInputStream);
         mOutputStream = aOutputStream;
-//        mOutputStream = new FileOutputStream(PLAINOUTPUT);
-        
-//        this.sessionEncrypter = sessionEncrypter;
-//        mOutputStreamCipher = sessionEncrypter.openCipherOutputStream(
-//        		aOutputStream);
-//        mOutputStreamCipher = sessionEncrypter.openCipherOutputStream(
-//        	new FileOutputStream(CIPHER));
-//        mOutputStreamCipher = sessionEncrypter.openCipherOutputStream(aOutputStream);
-//        mParent = aParent; 
     }
     /**
      * Runs the thread. Until it is possible, reads the input stream and puts read
@@ -70,17 +59,8 @@ private static String PLAINOUTPUT = "/home/pethrus/Desktop/plainoutput.txt";
                 if (bytesRead == -1)
                     break; // End of stream is reached --> exit the thread
                 
-                // TODO: Write encrypted to output buffer
-//                mOutputStreamCipher = sessionEncrypter.openCipherOutputStream(mOutputStream);
-               // *********TODO: TRY USING CIPHERINPUTSTREAM INSTEAD!! ********
-               // Also check DISCUSSION for problems with this.
-                // Write to output buffer
-//                mOutputStreamCipher.write(buffer);
                 mOutputStream.write(buffer, 0, bytesRead);
-//                mOutputStreamCipher.write(buffer, 0, bytesRead);
-//                mOutputStreamCipher.close();
             }
-//            mOutputStreamCipher.close();
         } catch (IOException e) {
             // Read/write failed --> connection is broken --> exit the thread
         }

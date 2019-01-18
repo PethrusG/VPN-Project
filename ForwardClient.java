@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.util.Arrays;
 import java.util.Base64;
 
 import javax.crypto.BadPaddingException;
@@ -90,13 +91,6 @@ public class ForwardClient
 //        MyCertificate caCertificate = new MyCertificate(new File(CACERTIFICATE));
         MyCertificate caCertificate = new MyCertificate(new File(arguments.get("cacert")));
         
-		// TODO: Remove. Just for testing
-        VerifyMyCertificate verifyThisClientCert = new VerifyMyCertificate(caCertificate, userCertificate);
-        if (verifyThisClientCert.verifyCertificate())
-        	System.out.println("SERVER Cert is verified");
-        else
-        	System.out.println("SERVER Cert is verified");
-
         if(serverHello.getParameter("MessageType").equals("ServerHello")) {
         	
         	// Retrieve ForwardServer's certificate 
@@ -107,8 +101,6 @@ public class ForwardClient
         	InputStream in = new ByteArrayInputStream(forwardServerCertificateBytes);
         	X509Certificate forwardServerCertificateX = 
         			(X509Certificate)certFactory.generateCertificate(in);
-        	Logger.log("ForwardServer's certificate" + 
-        			forwardServerCertificateX.toString());
         	forwardServerCertificate = 
         			new MyCertificate(forwardServerCertificateX);
         	
@@ -117,6 +109,7 @@ public class ForwardClient
 					new VerifyMyCertificate(caCertificate, forwardServerCertificate);
 			if (verifyMyCertificate.verifyCertificate())
 				System.out.println("ForwardServer's certificate verified");
+			// TODO: Abort session if certificate cannot be verified!
 			else
 				System.out.println("Could not verify ForwardClient's certificate");
         }
@@ -130,7 +123,7 @@ public class ForwardClient
 //        clientRequest.putParameter("TargetPort", arguments.get("TargetPort"));
         clientRequest.send(socket);
         
-        // Receive forwarding host, port and session key
+        // Receive forwarding host, port, session key and session iv
         HandshakeMessage serverForwardingInfo = new HandshakeMessage();
         serverForwardingInfo.recv(socket);
         if (serverForwardingInfo.getParameter("MessageType").equals("Session")) {
@@ -139,15 +132,12 @@ public class ForwardClient
         			"ServerPort"));
         	String sessionKeyEncryptedEncoded = serverForwardingInfo.getParameter(
         			"SessionKey");
-//        	String sessionIv = serverForwardingInfo.getParameter("SessionIV");
         	String sessionIvEncryptedEncoded = serverForwardingInfo.getParameter("SessionIV");
 
-
-        	// byte [] sessionKeyEncrypted = HandshakeCrypto.decrypt(sessionKeyEncryptedEncoded, );
-        	
         	// Decode and decrypt session key and IV
         	byte [] sessionKeyEncryptedDecoded = Base64.getDecoder().decode(
         			sessionKeyEncryptedEncoded);
+        	
 //        	PrivateKey privateKey = HandshakeCrypto.getPrivateKeyFromKeyFile(
 //        			FORWARDCLIENTPRIVATEKEY);
         	PrivateKey privateKey = HandshakeCrypto.getPrivateKeyFromKeyFile(arguments.get("key"));
@@ -158,33 +148,21 @@ public class ForwardClient
         			sessionIvEncryptedEncoded);
         	byte [] sessionIvDecrypted = HandshakeCrypto.decrypt(
         			sessionIvEncryptedDecoded, privateKey);
-        	
-        	sessionEncrypter = new SessionEncrypter(sessionKeyDecrypted, sessionIvDecrypted);
-        	System.out.println("Received session key: " + sessionEncrypter.key.toString());
-        	System.out.println("Received session key: " + sessionEncrypter.iv1.toString());
-        	
+
+        	System.out.println("In Forward Client: iv encrypted and encoded: " + Arrays.toString(sessionIvEncryptedEncoded.getBytes()));
+        	System.out.println("In Forward Client: iv encrypted and decoded: " + Arrays.toString(sessionIvEncryptedDecoded));
+			System.out.println("In Forward Client: iv decrypted decoded: " + Arrays.toString(sessionIvDecrypted));
+
         	// Generate session decrypter
+        	sessionEncrypter = new SessionEncrypter(sessionKeyDecrypted, sessionIvDecrypted);
         	sessionDecrypter = new SessionDecrypter(
         		sessionEncrypter.key.getSecretKey().getEncoded(), 
         		sessionEncrypter.iv1.getIV());
-        	
-//        	sessionKey = new SessionKey(sessionKeyDecrypted);
-//        	System.out.println("Received session key: " + sessionKey);
+			
+        	System.out.println("In Forward Client: iv1.getIv() decrypted decoded: " + Arrays.toString(sessionEncrypter.iv1.getIV()));
+        	System.out.println("In Forward Client: iv1.getIv() decrypted decoded: " + Arrays.toString(sessionEncrypter.iv1.getIV()));
         }
         socket.close();
-
-        /*
-         * Fake the handshake result with static parameters.
-         */
-
-        /* This is to where the ForwardClient should connect. 
-         * The ForwardServer creates a socket
-         * dynamically and communicates the address (hostname and port number)
-         * to ForwardClient during the handshake (ServerHost, ServerPort parameters).
-         * Here, we use a static address instead. 
-         */
-//        serverHost = Handshake.serverHost;
-//        serverPort = Handshake.serverPort;        
     }
 
     /*
@@ -226,7 +204,6 @@ public class ForwardClient
             String clientHostPort = clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort();
             log("Accepted client from " + clientHostPort);
            
-            // TODO: Add encryption in ForwardServerClientThread!
             forwardThread = new ForwardServerClientThread(
             		clientSocket, serverHost, serverPort, 
             		sessionEncrypter, sessionDecrypter, false);

@@ -168,9 +168,6 @@ public class ForwardServerClientThread extends Thread
  
            // Start encrypted forwarding of socket data between server and client 
            if(isForwardServer) {
-        	   // TODO: Add decryption to ForwardServer->client stream
-        	   // TODO: Add encryption to client-> ForwardClient stream
-        	   System.out.println("SUPPOSEDLY NOT ENCRYPTING");
 			   ForwardThread clientForward = new ForwardThread(
 					   this, clientIn, serverOut, sessionEncrypter);
 			   ForwardThread serverForward = new ForwardThread(
@@ -181,12 +178,8 @@ public class ForwardServerClientThread extends Thread
            }
            
            else { 
-        	   // Encrypts client->ForwardClient stream
-        	   // TODO: Decrypt ForwardServer->cient stream
-        	   System.out.println("SUPPOSEDLY ENCRYPTING");
 			   ForwardThread clientForward = new ForwardThread(
 					   this, clientIn, serverOut, sessionEncrypter);
-			   System.out.println("Server output stream: " + serverOut.toString());
 			   ForwardThread serverForward = new ForwardThread(
 					   this, serverIn, clientOut);
 			   mBothConnectionsAreAlive = true;

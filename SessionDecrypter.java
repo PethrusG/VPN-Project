@@ -45,7 +45,6 @@ public class SessionDecrypter {
 		this.key = new SessionKey(key);
 		this.cipher = Cipher.getInstance("AES/CTR/NoPadding");
 		this.iv = iv;
-		System.out.println("************iv is: " + iv);
 		this.cipher.init(Cipher.DECRYPT_MODE, this.key.getSecretKey(), 
 				new IvParameterSpec(this.iv));
 	}
