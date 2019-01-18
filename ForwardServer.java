@@ -77,7 +77,9 @@ public class ForwardServer
         
         int port = Integer.parseInt(arguments.get("handshakeport"));
 //        MyCertificate caCertificate = new MyCertificate(new File(CACERTIFICATE));
+        File caFile = new File(arguments.get("cacert"));
         MyCertificate caCertificate = new MyCertificate(new File(arguments.get("cacert")));
+        System.out.println("***********caCertificate file path is: " + caFile.getAbsolutePath());
         
         
         if(clientHello.getParameter("MessageType").equals("ClientHello")) {

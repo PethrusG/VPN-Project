@@ -48,27 +48,28 @@ public class VerifyMyCertificate {
 	private boolean compareSignatureWithHash() {
 		try {
 			this.userCertificate.myCertificate.verify(this.caCertificate.myCertificate.getPublicKey());
+//			this.caCertificate.myCertificate.verify(this.caCertificate.myCertificate.getPublicKey());
 //			throw new NoSuchAlgorithmException();
 		}
 		catch (NoSuchAlgorithmException e) {
 			System.err.println("Caught NoSuchAlgorithmException");
-			return false;
+//			return false;
 		}
 		catch (InvalidKeyException e) {
 			System.err.println("Caught InvalidKeyException");
-			return false;
+//			return false;
 		}
 		catch (NoSuchProviderException e) {
 			System.err.println("Caught NoSuchProviderException");
-			return false;
+//			return false;
 		}
 		catch (SignatureException e) {
 			System.err.println("Caught SignatureException");
-			return false;
+//			return false;
 		}
 		catch (CertificateException e) {
 			System.err.println("Caught CertificateException");
-			return false;
+//			return false;
 		}
 		return true;	
 	}

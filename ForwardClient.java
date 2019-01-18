@@ -91,6 +91,9 @@ public class ForwardClient
 //        MyCertificate caCertificate = new MyCertificate(new File(CACERTIFICATE));
         MyCertificate caCertificate = new MyCertificate(new File(arguments.get("cacert")));
         
+        File caFile = new File(arguments.get("cacert"));
+        System.out.println("***********caCertificate file path is: " + caFile.getAbsolutePath());
+        
         if(serverHello.getParameter("MessageType").equals("ServerHello")) {
         	
         	// Retrieve ForwardServer's certificate 
